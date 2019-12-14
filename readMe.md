@@ -6,6 +6,15 @@ Quindi? si continua a vivere di opinioni? Abbiamo la possibilità di provare ad 
 
 l'esercizio è interessante perché voglio vedere come si possano correlare dati rilevati con altre informazioni ricavate tramite dei "reasonable guess". Effettuerò le misure sul percorso casa lavoro, è un percorso noto e ripetuto. Tramite la misurazione del tempo e la mappa sarò in grado di stimare la posizione anche senza un GPS. La mia velocità è approssimativamente nota, cosi come le lunghezze medie delle auto: questo mi darà una ragionevole stima della velocità dell'auto. Questo e altre cose che scoprirò usandolo.
 
+# descrizione del progetto
+
+i post che descrivono il progetto si trovano nel sito di StuffCube
+
+https://stuffcube.wordpress.com/2019/12/01/sei-troppo-vicino-il-ciclista-misurato/
+
+https://stuffcube.wordpress.com/2019/12/07/il-ciclista-misurato-due/
+
+
 # il lidar
 
 il lidar è un misuratore di distanza basato su un laser. Caratteristica del sensore usato è la il range di misura da alcune decine di cm sino a 12 metri dichiarati e l'angolo di misura di 2.4 gradi. L'angolo di misura è il cono dove un oggetto deve stare per essere percepito. Questo lidar è direzionale, "vede" solo gli oggetti di fronte.
