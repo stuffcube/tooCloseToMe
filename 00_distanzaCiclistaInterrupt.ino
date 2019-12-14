@@ -1,5 +1,9 @@
 /*
  * 
+  04dic19 | aggiunto wifi, led e tasto.
+  12dic19 | non prendeva cambiao ssid
+          | pulsante su D3 attiva invio dati
+  
  * esp8266 wemos min D1 R1:
  * 
  * the lidar must be disconneted to program the chip
@@ -8,12 +12,39 @@
  * http://arduino.esp8266.com/Arduino/versions/2.3.0/doc/reference.html
  * 
  */
+#include <Arduino.h>
+
+#include <ESP8266WiFi.h>
+//#include <ESP8266WiFiMulti.h>
+//ESP8266WiFiMulti WiFiMulti;
+
+
+#include <ESP8266HTTPClient.h>
+
+// parti da definire, password e server dati
+char ssid[] = "";
+char password[] = "";
+#define yourServer "http://yourserver/"
+
+#define LED_OFF   HIGH
+#define LED_ON    LOW
+#define TASTO_INVIO 0   // con D3 non funziona
 
 int verbose = 1;
 int riga = 0;
+String url;
 
 #define debugPort Serial1
 
+  
+#define CROSS_DISTANCE 250
+#define INIT            -1
+#define NO_CAR          0
+#define CAR_INIT        1
+#define CAR_ASIDE       2
+#define CAR_LEAVE       3
+#define CAR_PRINT       5
+#define POINTS     1000
 
 uint distance = 0;
 uint strength = 0;
@@ -30,7 +61,7 @@ struct _point{
 struct _point points[1000];
 int pointIndex = 0;
 
-int sm = 0;
+int sm = INIT;
 
 
 //this structure cointains data about a car intersection
@@ -47,9 +78,90 @@ struct _carCrossing carCrossing[1000];
 
 int carIndex = 0;
 
+void sendData() {
 
+
+    for (int index=0; index < carIndex; index++){
+        // wait for WiFi connection
+        delay(1000);
+//        if ((WiFiMulti.run() == WL_CONNECTED)) {
+          if (1){      
+            WiFiClient client;
+            
+            HTTPClient http;
+    
+            debugPort.print("[HTTP] begin...\n");
+            digitalWrite(LED_BUILTIN, digitalRead(LED_BUILTIN)); 
+              
+            url = yourServer;
+            url += "comandi.php?cmd=add_riga";
+            url += "&start_time=";
+            url += carCrossing[index].tInit;
+            url += "&end_time=";
+            url += carCrossing[index].tEnd;
+            url += "&start_distance=";
+            url += carCrossing[index].initDistance;
+            url += "&end_distance=";
+            url += carCrossing[index].endDistance;
+            debugPort.println(url);
+    
+  
+            if (http.begin(client, url)) {  // HTTP
+                debugPort.print("[HTTP] GET...\n");
+                // start connection and send HTTP header
+                int httpCode = http.GET();
+          
+                // httpCode will be negative on error
+                if (httpCode > 0) {
+                  // HTTP header has been send and Server response header has been handled
+                  debugPort.printf("[HTTP] GET... code: %d\n", httpCode);
+          
+                  // file found at server
+                  if (httpCode == HTTP_CODE_OK || httpCode == HTTP_CODE_MOVED_PERMANENTLY) {
+                    String payload = http.getString();
+                    debugPort.println(payload);
+                  }
+                } else {
+                  debugPort.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
+                }
+          
+                http.end();
+              } else {
+                debugPort.printf("[HTTP} Unable to connect\n");
+           }
+        }
+    }
+    debugPort.println("data sent");
+    while(1){
+        digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));   
+        delay(1000); // wait to dead
+    }
+
+}
+
+void initWiFi(void){
+    /*
+      WiFi.mode(WIFI_STA);
+      WiFiMulti.addAP(ssid, password);
+    */
+    WiFi.begin(ssid, password);
+    while (WiFi.status() != WL_CONNECTED){
+        digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));   
+        debugPort.println("trying WiFi connectionc");
+        delay(1000); 
+      
+    }
+    digitalWrite(LED_BUILTIN, LED_ON);   
+    debugPort.println("WiFi connected");
+
+}
 //------------------------------------------------------------------------
 void setup() {
+    pinMode(LED_BUILTIN, OUTPUT);         // Initialize the LED_BUILTIN pin as an output
+    pinMode(TASTO_INVIO, INPUT);          // Initialize the TASTO_INVIO pin as an input
+    digitalWrite(TASTO_INVIO, HIGH);   
+    digitalWrite(LED_BUILTIN, LED_OFF);   
+
     debugPort.begin(115200);
     Serial.begin(115200);
     debugPort.println("\n \n port1 initialized");
@@ -66,20 +178,27 @@ int i, counter;
 
 void loop() {
 
+  //Serial.println(digitalRead(TASTO_INVIO));
+  if(digitalRead(TASTO_INVIO) == 0) {
+    digitalWrite(LED_BUILTIN, LED_ON);   
+    
+    debugPort.println("start wifi connection");
+    initWiFi();
+    debugPort.println("start send data");
+    sendData();
+    // never exit
+    
+  }
+
+  
   if(dataAvalilable(&distance, &strength)) {
     //debugPort.println(distance);
   }
   else return; // questo fa esegueire la SM solo con nuovi dati
 
-  
-#define CROSS_DISTANCE 250
-#define INIT            -1
-#define NO_CAR          0
-#define CAR_INIT        1
-#define CAR_ASIDE       2
-#define CAR_LEAVE       3
-#define CAR_PRINT       5
-#define POINTS		 1000
+
+
+
 
 
   switch (sm){
@@ -101,6 +220,8 @@ void loop() {
       			carCrossing[carIndex].tInit 		= millis();
       			carCrossing[carIndex].initDistance= distance;
       			sm = CAR_ASIDE;
+            digitalWrite(LED_BUILTIN, LED_ON);   
+
       			if (verbose){
       				debugPort.println("CAR_ASIDE");
       			}
@@ -143,6 +264,7 @@ void loop() {
         }
         //carCrossing[carIndex].averageDistance = (int)(sum/pointIndex);
   
+        digitalWrite(LED_BUILTIN, LED_OFF);   
 
   
         break;
