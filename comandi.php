@@ -8,7 +8,7 @@
 
 	<?php
         // http://yourSite/comandi.php?cmd=add_riga&start_time=1&end_time=2&start_distance=3&end_distance=4
-        // http://yourSite/00_metrica_ciclista/comandi.php?cmd=lista
+        // http://yourSite/comandi.php?cmd=lista
 
 		/* il primo argomento $cmd e' il comando
             add_riga:	mette la riga corrente nel db
@@ -86,4 +86,4 @@ $conn->close();
 	?>
 		
 	</body>
-</html>
+</html>
